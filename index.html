@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UI设计作品集</title>
+    
+    <!-- Favicon设置 - 修复路径和缓存问题 -->
+    <link rel="apple-touch-icon" sizes="180x180" href="./favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="./favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./favicon_io/favicon-16x16.png">
+    <link rel="icon" type="image/x-icon" href="./favicon_io/favicon.ico">
+    <link rel="manifest" href="./favicon_io/site.webmanifest">
+
+    <!-- 强制浏览器不缓存favicon -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
+    <style>
+        /* 基础样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        /* 全局样式 */
+        body {
+            background-color: #1C1C1C;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #FFFFFF;
+            padding-top: 60px; /* 内容区顶部间距 */
+            min-height: 100vh;
+        }
+        
+        /* 图片容器 */
+        .image-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        
+        /* 图片项 */
+        .image-item {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin-bottom: 0; /* 图片之间无间距 */
+            position: relative;
+        }
+        
+        /* 图片样式 */
+        .portfolio-image {
+            width: 100%;
+            height: auto;
+            display: block;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .portfolio-image.loaded {
+            opacity: 1;
+        }
+        
+        /* 骨架图占位符 */
+        .skeleton {
+            width: 100%;
+            height: 1080px;
+            background-color: rgba(255, 255, 255, 0.2);
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        
+        .skeleton.hidden {
+            display: none;
+        }
+        
+        /* 错误提示容器 */
+        .error-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(28, 28, 28, 0.95);
+            z-index: 1000;
+            display: none;
+        }
+        
+        .error-container.show {
+            display: flex;
+        }
+        
+        /* 错误提示文本 */
+        .error-text {
+            font-size: 18px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        /* 重新加载按钮 */
+        .reload-button {
+            width: 96px;
+            height: 36px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 4px;
+            color: #FFFFFF;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .reload-button:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        /* 响应式设计 */
+        @media (min-width: 768px) {
+            .image-item {
+                width: 65%;
+                max-width: 1200px;
+            }
+        }
+        
+        /* 加载动画 */
+        @keyframes pulse {
+            0% { background-color: rgba(255, 255, 255, 0.2); }
+            50% { background-color: rgba(255, 255, 255, 0.1); }
+            100% { background-color: rgba(255, 255, 255, 0.2); }
+        }
+        
+        .skeleton.pulse {
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="image-container" id="imageContainer">
+        <!-- 图片将通过JavaScript动态加载到这里 -->
+    </div>
+    
+    <div class="error-container" id="errorContainer">
+        <p class="error-text">网络异常，请重新加载</p>
+        <button class="reload-button" id="reloadButton">重新加载</button>
+    </div>
+
+    <script>
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 刷新后滚动到页面顶部
+            window.scrollTo(0, 0);
+            
+            // 防止图片被下载/复制
+            preventImageDownload();
+            
+            // 加载并显示图片
+            loadPortfolioImages();
+            
+            // 设置重新加载按钮事件
+            document.getElementById('reloadButton').addEventListener('click', function() {
+                hideError();
+                clearImages();
+                loadPortfolioImages();
+            });
+        });
+        
+        // 防止图片被下载/复制的函数
+        function preventImageDownload() {
+            // 禁用右键菜单
+            document.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                return false;
+            });
+            
+            // 禁用拖拽
+            document.addEventListener('dragstart', function(e) {
+                if (e.target.tagName === 'IMG') {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+            
+            // 禁用选择文本（对图片也有效）
+            document.addEventListener('selectstart', function(e) {
+                if (e.target.tagName === 'IMG') {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+            
+            // 阻止常见的保存图片方式
+            document.addEventListener('keydown', function(e) {
+                // 禁用 Ctrl+S, Ctrl+Shift+S, Ctrl+C
+                if ((e.ctrlKey || e.metaKey) && 
+                    (e.key === 's' || e.key === 'S' || e.key === 'c' || e.key === 'C')) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+        }
+        
+        // 清除所有已加载的图片
+        function clearImages() {
+            const container = document.getElementById('imageContainer');
+            container.innerHTML = '';
+        }
+        
+        // 显示错误提示
+        function showError() {
+            document.getElementById('errorContainer').classList.add('show');
+        }
+        
+        // 隐藏错误提示
+        function hideError() {
+            document.getElementById('errorContainer').classList.remove('show');
+        }
+        
+        // 加载作品图片
+        function loadPortfolioImages() {
+            const container = document.getElementById('imageContainer');
+            let imageCount = 0;
+            let loadedCount = 0;
+            let hasError = false;
+            
+            // 查找images文件夹中的所有图片
+            // 由于浏览器安全限制，我们无法直接读取文件夹内容
+            // 所以我们将尝试加载从work1.png开始的图片，直到找不到为止
+            function tryLoadImage(index) {
+                const img = new Image();
+                const imageUrl = `images/work${index}.png`;
+                
+                // 创建图片项容器
+                const imageItem = document.createElement('div');
+                imageItem.className = 'image-item';
+                
+                // 创建骨架图
+                const skeleton = document.createElement('div');
+                skeleton.className = 'skeleton pulse';
+                imageItem.appendChild(skeleton);
+                
+                // 创建图片元素
+                img.className = 'portfolio-image';
+                img.loading = 'eager'; // 加载优化：立即加载
+                img.decoding = 'async'; // 异步解码
+                img.alt = `作品 ${index}`;
+                
+                // 图片加载成功
+                img.onload = function() {
+                    skeleton.classList.add('hidden');
+                    img.classList.add('loaded');
+                    loadedCount++;
+                    
+                    // 检查是否所有图片都已尝试加载
+                    if (index === imageCount) {
+                        // 如果一张图片都没加载成功，显示错误
+                        if (loadedCount === 0 && index > 0) {
+                            hasError = true;
+                            showError();
+                        }
+                    } else {
+                        // 尝试加载下一张图片
+                        tryLoadImage(index + 1);
+                    }
+                };
+                
+                // 图片加载失败
+                img.onerror = function() {
+                    // 如果第一张图片就加载失败，说明没有图片
+                    if (index === 1) {
+                        hasError = true;
+                        showError();
+                        return;
+                    }
+                    
+                    // 否则停止尝试，记录图片总数
+                    imageCount = index - 1;
+                    
+                    // 检查是否所有图片都已加载完成
+                    if (loadedCount === imageCount && imageCount > 0) {
+                        // 所有图片加载完成
+                        hideError();
+                    } else if (imageCount === 0) {
+                        // 没有找到任何图片
+                        hasError = true;
+                        showError();
+                    }
+                };
+                
+                // 将图片添加到容器
+                imageItem.appendChild(img);
+                container.appendChild(imageItem);
+                
+                // 开始加载图片
+                img.src = imageUrl;
+            }
+            
+            // 从第一张图片开始尝试加载
+            tryLoadImage(1);
+            
+            // 设置超时检测
+            setTimeout(function() {
+                if (loadedCount === 0 && !hasError) {
+                    showError();
+                }
+            }, 5000); // 5秒后如果还没加载成功，显示错误
+        }
+    </script>
+</body>
+</html>
