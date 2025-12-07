@@ -1,208 +1,182 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UI设计作品集</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            background-color: #1C1C1C;
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
-            padding: 20px 0;
-        }
-        
-        .container {
-            width: 100%;
-            max-width: 1200px;
-        }
-        
-        .portfolio {
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            gap: 0;
-        }
-        
-        .portfolio-item {
-            width: 100%;
-        }
-        
-        .portfolio-item img {
-            width: 100%;
-            display: block;
-        }
-        
-        .loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #1C1C1C;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-        
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid rgba(51, 106, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: #336AFF;
-            animation: spin 1s ease-in-out infinite;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        .error-message {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #FFFFFF;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            z-index: 9999;
-        }
-        
-        .error-text {
-            color: #565D66;
-            font-size: 18px;
-            margin-bottom: 10px;
-        }
-        
-        .retry-btn {
-            color: #336AFF;
-            cursor: pointer;
-            text-decoration: underline;
-        }
-        
-        @media (min-width: 768px) {
-            .container {
-                width: 65%;
-            }
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>作品集</title>
+  <style>
+    :root{
+      --bg: #1C1C1C;
+      --spinner: #336AFF;
+      --fail-text: #565D66;
+      --retry: #336AFF;
+      --white: #FFFFFF;
+      --max-width: 1200px;
+      --desktop-width-percent: 65%;
+    }
+    html,body{
+      height:100%;
+      margin:0;
+      background:var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Arial;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      color: #fff;
+    }
+
+    /* 容器：手机 100%，桌面按 65% 居中，最大 1200px */
+    .wrap{
+      margin:0 auto;
+      width:100%;
+      max-width:var(--max-width);
+      box-sizing:border-box;
+      padding:0;
+    }
+    @media (min-width: 800px){
+      .wrap{
+        width: var(--desktop-width-percent);
+      }
+    }
+
+    /* 图列：一列展示（每张图宽度相同，高度自适应），图片之间无缝隙 */
+    .grid{
+      display:block;
+    }
+    .grid img{
+      display:block;      /* 避免 inline 间隙 */
+      width:100%;         /* 宽度占容器的 100% */
+      height:auto;        /* 高度根据宽度等比缩放 */
+      margin:0;
+      padding:0;
+      border:0;
+      box-shadow: none;
+    }
+
+    /* 覆盖层：加载时显示 spinner */
+    .overlay{
+      position:fixed;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      pointer-events:none;
+      z-index:1000;
+    }
+    .spinner{
+      width:64px;
+      height:64px;
+      border-radius:50%;
+      border:6px solid rgba(51,106,255,0.12);
+      border-top-color: var(--spinner);
+      animation:spin 1s linear infinite;
+      box-sizing:border-box;
+      pointer-events:auto;
+    }
+    @keyframes spin {
+      to{ transform: rotate(360deg); }
+    }
+
+    /* 加载失败视图（白色背景，居中一行字） */
+    .fail-screen{
+      position:fixed;
+      inset:0;
+      display:none; /* 只有失败时显示 */
+      align-items:center;
+      justify-content:center;
+      background: var(--white);
+      z-index:1001;
+      text-align:center;
+    }
+    .fail-text{
+      font-size:18px;
+      color: var(--fail-text);
+    }
+    .retry-btn{
+      color: var(--retry);
+      text-decoration: none;
+      margin-left:8px;
+      font-weight:600;
+      cursor:pointer;
+    }
+
+    /* 透明度控制（当 overlay/failed 显示时，页面下方内容不可交互） */
+    .masked{
+      filter: none;
+      pointer-events: none;
+      user-select: none;
+    }
+  </style>
 </head>
 <body>
-    <div class="loading" id="loading">
-        <div class="spinner"></div>
+  <div class="wrap" id="wrap">
+    <div class="grid" id="grid">
+      <!-- 请把 images 文件夹和文件名保证与下面路径一致 -->
+      <img src="images/work1.png" alt="work1" loading="lazy">
+      <img src="images/work2.png" alt="work2" loading="lazy">
+      <img src="images/work3.png" alt="work3" loading="lazy">
+      <img src="images/work4.png" alt="work4" loading="lazy">
+      <img src="images/work5.png" alt="work5" loading="lazy">
+      <img src="images/work6.png" alt="work6" loading="lazy">
+      <img src="images/work7.png" alt="work7" loading="lazy">
+      <img src="images/work8.png" alt="work8" loading="lazy">
     </div>
-    
-    <div class="error-message" id="errorMessage">
-        <div class="error-text">加载失败</div>
-        <div class="retry-btn" id="retryBtn">重试</div>
-    </div>
-    
-    <div class="container">
-        <div class="portfolio" id="portfolio">
-            <!-- 图片将在这里显示 -->
-        </div>
-    </div>
+  </div>
 
-    <script>
-        // 修改这里的图片路径为你的实际PNG图片文件名
-        const imagePaths = [
-            'images/work1.png',
-            'images/work2.png',
-            'images/work3.png',
-            'images/work4.png',
-            'images/work5.png',
-            'images/work6.png',
-            'images/work7.png',
-            'images/work8.png',
-            'images/work9.png',
-            'images/work10.png',
-            'images/work11.png',
-            'images/work12.png',
-            'images/work13.png',
-            'images/work14.png',
-            'images/work15.png',
-            'images/work16.png',
-            'images/work17.png',
-            'images/work18.png',
-            'images/work19.png',
-            'images/work20.png'
-        ];
-        
-        const loadingElement = document.getElementById('loading');
-        const errorMessageElement = document.getElementById('errorMessage');
-        const portfolioElement = document.getElementById('portfolio');
-        const retryBtn = document.getElementById('retryBtn');
-        
-        function loadImages() {
-            let loadedCount = 0;
-            const totalImages = imagePaths.length;
-            
-            if (totalImages === 0) {
-                showError();
-                return;
-            }
-            
-            imagePaths.forEach(path => {
-                const img = new Image();
-                img.onload = () => {
-                    loadedCount++;
-                    if (loadedCount === totalImages) {
-                        setTimeout(() => {
-                            loadingElement.style.display = 'none';
-                            addImagesToPortfolio();
-                        }, 500);
-                    }
-                };
-                
-                img.onerror = () => {
-                    showError();
-                };
-                
-                img.src = path;
-            });
+  <!-- 加载动画覆层 -->
+  <div class="overlay" id="overlay" aria-hidden="true">
+    <div class="spinner" id="spinner" role="status" aria-label="加载中"></div>
+  </div>
+
+  <!-- 加载失败视图 -->
+  <div class="fail-screen" id="failScreen" role="alert" aria-live="assertive">
+    <div>
+      <span class="fail-text">加载失败</span>
+      <a id="retryLink" class="retry-btn">重试</a>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      const overlay = document.getElementById('overlay');
+      const failScreen = document.getElementById('failScreen');
+      const retryLink = document.getElementById('retryLink');
+      const wrap = document.getElementById('wrap');
+      const imgs = Array.from(document.querySelectorAll('.grid img'));
+
+      // 如果离线 -> 立即显示失败白屏
+      function showFail(){
+        overlay.style.display = 'none';
+        failScreen.style.display = 'flex';
+        // 白背景（CSS 已设置）
+        wrap.classList.add('masked');
+      }
+
+      // 隐藏失败视图并尝试重载页面
+      retryLink.addEventListener('click', function(e){
+        e.preventDefault();
+        // 简单尝试刷新页面
+        window.location.reload();
+      });
+
+      // 当页面完全加载（包括图片）时隐藏 spinner
+      window.addEventListener('load', function(){
+        // 检查是否所有图片都已成功加载
+        const anyError = imgs.some(i => !i.complete || i.naturalWidth === 0);
+        if(anyError){
+          // 图片加载失败（可能网络问题）
+          showFail();
+        } else {
+          // 隐藏 overlay
+          overlay.style.display = 'none';
         }
-        
-        function showError() {
-            loadingElement.style.display = 'none';
-            errorMessageElement.style.display = 'flex';
-        }
-        
-        function addImagesToPortfolio() {
-            imagePaths.forEach(path => {
-                const portfolioItem = document.createElement('div');
-                portfolioItem.className = 'portfolio-item';
-                
-                const img = document.createElement('img');
-                img.src = path;
-                img.alt = 'UI设计作品';
-                
-                portfolioItem.appendChild(img);
-                portfolioElement.appendChild(portfolioItem);
-            });
-        }
-        
-        retryBtn.addEventListener('click', () => {
-            errorMessageElement.style.display = 'none';
-            loadingElement.style.display = 'flex';
-            portfolioElement.innerHTML = '';
-            loadImages();
-        });
-        
-        window.addEventListener('DOMContentLoaded', loadImages);
-    </script>
-</body>
-</html>
+      });
+
+      // 如果浏览器检测到离线事件
+      window.addEventListener('offline', function(){
+        showFail();
+      });
+
+      // 额外：如果图片在加载过程中触发 error -> 显示失败
+      imgs.forEach(img=>{
+        img.addEventListener('error', function(){
+          showFail();
