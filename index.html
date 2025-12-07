@@ -4,50 +4,42 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UI设计作品集</title>
-    <!-- 网站图标配置 -->
+    <!-- 网站图标配置（保持不变） -->
     <link rel="apple-touch-icon" sizes="180x180" href="favicon_io/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon_io/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="favicon_io/favicon-16x16.png">
     <link rel="manifest" href="favicon_io/site.webmanifest">
+    <!-- 国内网络优化：禁用预加载，减少请求阻塞 -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <style>
-        /* 全局样式重置与基础设置 */
+        /* 全局样式不变，保持原有设计 */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
             background-color: #1C1C1C;
             padding-top: 60px;
-            /* 禁止选中文本 */
             user-select: none;
         }
-
-        /* 图片容器样式 */
         .work-container {
             width: 100%;
         }
-
-        /* 作品图片样式 - 响应式设计 */
         .work-image {
             width: 100%;
             display: block;
-            /* 保持图片比例 */
             object-fit: cover;
         }
-
-        /* 桌面端适配 */
         @media (min-width: 768px) {
             .work-image {
                 width: 65%;
                 max-width: 1200px;
-                /* 居中显示 */
                 margin: 0 auto;
             }
         }
-
-        /* 网络异常提示样式 */
         .error-message {
             display: none;
             color: #FFFFFF;
@@ -55,7 +47,6 @@
             margin-top: 50px;
             font-size: 18px;
         }
-
         .reload-button {
             width: 96px;
             height: 36px;
@@ -68,15 +59,22 @@
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
-
         .reload-button:hover {
             background-color: rgba(255, 255, 255, 0.3);
+        }
+        /* 新增：加载中提示（优化用户体验） */
+        .loading-message {
+            color: #FFFFFF;
+            text-align: center;
+            margin-top: 50px;
+            font-size: 18px;
         }
     </style>
 </head>
 <body>
+    <!-- 加载中提示 -->
+    <div class="loading-message" id="loadingMessage">加载中...</div>
     <div class="work-container" id="workContainer"></div>
-    
     <!-- 网络异常提示 -->
     <div class="error-message" id="errorMessage">
         网络异常，请重新加载
@@ -86,107 +84,97 @@
     <script>
         const workContainer = document.getElementById('workContainer');
         const errorMessage = document.getElementById('errorMessage');
+        const loadingMessage = document.getElementById('loadingMessage');
         let imageCount = 1;
-        const maxConsecutiveErrors = 1; // 连续1次加载失败就停止（没有更多图片）
+        const maxConsecutiveErrors = 1;
         let consecutiveErrors = 0;
-        const imageLoadTimeout = 3000; // 图片加载超时时间：3秒
-        let hasLoadedAtLeastOneImage = false; // 标记是否已经加载到至少一张图片
-        let isInitialLoad = true; // 标记是否是页面初始加载（只在初始加载时滚动到顶部）
+        const imageLoadTimeout = 8000; // 国内网络超时延长到8秒（关键优化）
+        let hasLoadedAtLeastOneImage = false;
+        let isInitialLoad = true;
 
-        // 页面初始加载完成后滚动到顶部（只执行一次）
+        // 初始滚动到顶部（逻辑不变）
         window.addEventListener('DOMContentLoaded', () => {
             if (isInitialLoad) {
                 window.scrollTo(0, 0);
-                isInitialLoad = false; // 执行后标记为非初始加载
+                isInitialLoad = false;
             }
         });
 
-        // 加载图片函数（添加防缓存参数）
+        // 加载图片函数（国内网络优化）
         function loadImage() {
-            // 每次加载都添加时间戳参数，禁用浏览器缓存
             const timestamp = new Date().getTime();
             const pngUrl = `images/work${imageCount}.png?v=${timestamp}`;
             const jpgUrl = `images/work${imageCount}.jpg?v=${timestamp}`;
             
             const img = new Image();
-            let timeoutTimer; // 超时计时器
-            let isTimeout = false; // 标记是否超时
+            let timeoutTimer;
+            let isTimeout = false;
 
-            // 图片加载成功处理
+            // 图片加载成功：隐藏加载提示
             img.onload = () => {
-                clearTimeout(timeoutTimer); // 清除超时计时器
-                if (isTimeout) return; // 超时后加载成功也忽略
+                clearTimeout(timeoutTimer);
+                if (isTimeout) return;
                 
-                consecutiveErrors = 0; // 重置连续错误计数
-                hasLoadedAtLeastOneImage = true; // 标记已加载到图片
+                loadingMessage.style.display = 'none'; // 加载成功后隐藏"加载中"
+                consecutiveErrors = 0;
+                hasLoadedAtLeastOneImage = true;
                 img.classList.add('work-image');
                 workContainer.appendChild(img);
                 imageCount++;
-                loadImage(); // 继续加载下一张
+                loadImage();
             };
 
-            // 图片加载失败处理
             img.onerror = () => {
-                clearTimeout(timeoutTimer); // 清除超时计时器
-                if (isTimeout) return; // 超时后失败也忽略
+                clearTimeout(timeoutTimer);
+                if (isTimeout) return;
                 
-                // 先尝试jpg格式
                 if (img.src.includes('.png')) {
-                    img.src = jpgUrl; // 切换到jpg格式重试
+                    img.src = jpgUrl;
                 } else {
-                    // 两种格式都失败，累计错误次数
                     consecutiveErrors++;
                     
-                    // 只有当还没加载到任何图片，且连续失败时，才显示网络异常
+                    // 无图片且加载失败：显示错误提示，隐藏加载中
                     if (!hasLoadedAtLeastOneImage && consecutiveErrors >= maxConsecutiveErrors) {
+                        loadingMessage.style.display = 'none';
                         errorMessage.style.display = 'block';
                     }
                     
-                    // 连续失败1次，停止加载（说明没有更多图片了）
                     if (consecutiveErrors >= maxConsecutiveErrors) {
+                        loadingMessage.style.display = 'none'; // 无更多图片时隐藏加载中
                         return;
                     }
                     
                     imageCount++;
-                    loadImage(); // 尝试下一张
+                    loadImage();
                 }
             };
 
-            // 图片加载超时处理
+            // 超时处理（延长超时时间）
             function handleTimeout() {
                 isTimeout = true;
-                // 只有当还没加载到任何图片时，才显示网络异常
                 if (!hasLoadedAtLeastOneImage) {
+                    loadingMessage.style.display = 'none';
                     errorMessage.style.display = 'block';
                 }
-                img.onerror(); // 超时视为加载失败
+                img.onerror();
             }
 
-            // 设置加载超时
+            // 延长超时时间到8秒（国内网络波动大）
             timeoutTimer = setTimeout(handleTimeout, imageLoadTimeout);
 
-            // 开始加载png格式
+            // 开始加载
             img.src = pngUrl;
         }
 
-        // 初始化加载图片
+        // 初始化加载
         loadImage();
 
-        // 禁止右键菜单（保护图片）
-        document.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-        });
+        // 图片保护逻辑不变
+        document.addEventListener('contextmenu', (e) => e.preventDefault());
+        document.addEventListener('dragstart', (e) => e.target.tagName === 'IMG' && e.preventDefault());
 
-        // 禁止拖拽图片
-        document.addEventListener('dragstart', (e) => {
-            if (e.target.tagName === 'IMG') {
-                e.preventDefault();
-            }
-        });
-
-        // 禁止浏览器缓存页面（可选，增强防缓存效果）
+        // 国内网络：禁用浏览器缓存（增强兼容性）
         window.addEventListener('beforeunload', () => {
-            // 清除页面缓存
             window.location.reload(true);
         });
     </script>
