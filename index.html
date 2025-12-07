@@ -1,309 +1,228 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>作品集</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UI设计作品集</title>
+    <!-- 网站图标配置 -->
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon_io/favicon-16x16.png">
+    <link rel="manifest" href="favicon_io/site.webmanifest">
+    <style>
+        /* 全局样式重置与基础设置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-  <!-- Favicon（来自 favicon_io 文件夹） -->
-  <link rel="apple-touch-icon" sizes="180x180" href="favicon_io/apple-touch-icon.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="favicon_io/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="favicon_io/favicon-16x16.png">
-  <link rel="manifest" href="favicon_io/site.webmanifest">
+        body {
+            background-color: #1C1C1C;
+            padding-top: 60px;
+            overflow-x: hidden;
+        }
 
-  <style>
-    /* 基础页面样式 */
-    :root{
-      --bg: #1C1C1C;
-      --content-max: 1200px;
-      --content-ratio: 65vw; /* 桌面时占视口 65% */
-      --skeleton-color: rgba(255,255,255,0.2); /* FFFFFF 20% */
-      --white: #FFFFFF;
-    }
-    html,body{
-      height:100%;
-      margin:0;
-      background:var(--bg);
-      color:var(--white);
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-      user-select:none; /* 禁止选中文字（尽力阻止复制） */
-    }
-    /* 内容区居中，顶部留 60 */
-    .wrap{
-      padding-top:60px;
-      display:flex;
-      justify-content:center;
-      align-items: flex-start;
-      min-height:100vh;
-      box-sizing:border-box;
-    }
-    .content{
-      width:var(--content-ratio);
-      max-width:var(--content-max);
-    }
-    /* 响应：手机 100% */
-    @media (max-width:800px){
-      .content{
-        width:100%;
-        padding:0 0;
-      }
-    }
+        /* 图片容器样式 */
+        .image-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
 
-    /* 每张图片外层容器：无间隙、一列、图片宽度一致 */
-    .item{
-      margin:0;
-      padding:0;
-      display:block;
-      position:relative;
-      overflow:hidden;
-    }
-    .item img{
-      display:block;
-      width:100%;
-      height:auto;
-      -webkit-user-drag: none; /* 禁止拖动图片 */
-      user-drag: none;
-      pointer-events: auto;
-    }
+        /* 图片样式 - 响应式设计 */
+        .work-image {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
 
-    /* 骨架图样式（height:1080） */
-    .skeleton{
-      width:100%;
-      height:1080px; /* 固定高度占位 */
-      background: var(--skeleton-color);
-      display:block;
-    }
+        /* 骨架屏样式 */
+        .skeleton {
+            width: 100%;
+            height: 1080px;
+            background-color: rgba(255, 255, 255, 0.2);
+            display: block;
+        }
 
-    /* 网络异常覆盖层 */
-    .offline-overlay{
-      position:fixed;
-      inset:0;
-      display:none;
-      justify-content:center;
-      align-items:center;
-      z-index:1000;
-      background: rgba(0,0,0,0.6);
-    }
-    .offline-box{
-      background:transparent;
-      text-align:center;
-      color:var(--white);
-    }
-    .offline-box p{
-      margin:0 0 20px 0;
-      font-size:16px;
-    }
-    .reload-btn{
-      display:inline-block;
-      width:96px;
-      height:36px;
-      line-height:36px;
-      border-radius:4px;
-      background: var(--white);
-      color: var(--bg);
-      font-size:14px;
-      cursor:pointer;
-      border: none;
-    }
+        /* 网络异常提示样式 */
+        .error-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 100;
+        }
 
-    /* 隐藏因图片默认右键菜单带来的下载提示 */
-    img::-webkit-media-controls {
-      display:none !important;
-    }
+        .error-message {
+            color: #FFFFFF;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
 
-    /* 一个轻微的下拉提示（可选） */
-    .hint{
-      font-size:12px;
-      color:rgba(255,255,255,0.6);
-      text-align:center;
-      padding:12px 0;
-    }
-  </style>
+        .reload-btn {
+            width: 96px;
+            height: 36px;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: #FFFFFF;
+            border: none;
+            border-radius: 2px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .reload-btn:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* 桌面端适配 */
+        @media (min-width: 768px) {
+            .image-container {
+                align-items: center;
+            }
+
+            .work-image, .skeleton {
+                width: 65%;
+                max-width: 1200px;
+            }
+        }
+
+        /* 隐藏错误提示默认状态 */
+        .hidden {
+            display: none;
+        }
+    </style>
 </head>
 <body>
-  <div class="wrap">
-    <main class="content" id="gallery"></main>
-  </div>
-
-  <!-- 网络异常全屏提示 -->
-  <div class="offline-overlay" id="offline">
-    <div class="offline-box">
-      <p id="offline-text">网络异常，请重新加载</p>
-      <button class="reload-btn" id="reload-btn">重新加载</button>
+    <div class="image-container" id="imageContainer"></div>
+    <div class="error-container hidden" id="errorContainer">
+        <div class="error-message">网络异常，请重新加载</div>
+        <button class="reload-btn" id="reloadBtn">重新加载</button>
     </div>
-  </div>
 
-  <script>
-    /*****************************************
-     * 配置区（你可改这里的数字）
-     *****************************************/
-    const MAX_POSSIBLE = 50; // 尝试最多到 work50.png（你说图片 <50）
-    const DEFAULT_BATCH = 3; // 默认每次加载 3 张
-    const POOR_NET_BATCH = 1; // 网络特别差时每次加载 1 张
-    const SKELETON_HEIGHT = 1080; // 骨架高度（px）
-    /*****************************************/
+    <script>
+        // 全局变量
+        const imageContainer = document.getElementById('imageContainer');
+        const errorContainer = document.getElementById('errorContainer');
+        const reloadBtn = document.getElementById('reloadBtn');
+        let currentImageIndex = 1;
+        let isLoading = false;
+        let hasMoreImages = true;
+        const batchSize = 3; // 每次加载3张图片
 
-    const gallery = document.getElementById('gallery');
-    const offlineOverlay = document.getElementById('offline');
-    const reloadBtn = document.getElementById('reload-btn');
+        // 页面加载时滚动到顶部
+        window.addEventListener('load', () => {
+            window.scrollTo(0, 0);
+        });
 
-    // 保持加载序号队列（1..MAX_POSSIBLE）
-    const indices = Array.from({length: MAX_POSSIBLE}, (_,i) => i+1);
-    let pointer = 0; // 下一个要尝试加载的索引
-    let consecutiveImageErrors = 0; // 连续图片失败数字，用来检测网络异常
-    const ERROR_THRESHOLD = 8; // 如果连续 8 次失败，弹出网络异常提示
+        // 禁止右键菜单和图片拖拽
+        document.addEventListener('contextmenu', (e) => e.preventDefault());
+        document.addEventListener('dragstart', (e) => {
+            if (e.target.tagName === 'IMG') e.preventDefault();
+        });
 
-    // 检测网络质量（如果浏览器支持 Network Information API）
-    function getBatchSize(){
-      const nav = navigator;
-      if (nav.connection && nav.connection.effectiveType) {
-        const t = nav.connection.effectiveType; // '4g', '3g', '2g', 'slow-2g'
-        // 若是 2g 或 slow-2g，降级
-        if (t === 'slow-2g' || t === '2g') return POOR_NET_BATCH;
-        // 其它情况使用默认
-      }
-      return DEFAULT_BATCH;
-    }
+        // 初始加载图片
+        loadImages();
 
-    // 创建骨架占位
-    function createSkeleton(idx){
-      const wrap = document.createElement('div');
-      wrap.className = 'item';
-      const skeleton = document.createElement('div');
-      skeleton.className = 'skeleton';
-      skeleton.style.height = SKELETON_HEIGHT + 'px';
-      skeleton.dataset.idx = idx;
-      wrap.appendChild(skeleton);
-      gallery.appendChild(wrap);
-      return wrap;
-    }
+        // 滚动加载更多图片
+        window.addEventListener('scroll', () => {
+            if (hasMoreImages && !isLoading && 
+                window.innerHeight + window.scrollY >= document.body.offsetHeight - 500) {
+                loadImages();
+            }
+        });
 
-    // 创建图片元素并开始加载
-    function loadImageAtIndex(idx, container){
-      const img = document.createElement('img');
-      img.setAttribute('alt', `work${idx}`);
-      img.draggable = false;
-      img.loading = 'lazy';
-      // 阻止右键菜单在图片上
-      img.oncontextmenu = (e) => { e.preventDefault(); return false; };
-      img.ondragstart = (e) => { e.preventDefault(); return false; };
+        // 重新加载按钮事件
+        reloadBtn.addEventListener('click', () => {
+            errorContainer.classList.add('hidden');
+            currentImageIndex = 1;
+            hasMoreImages = true;
+            imageContainer.innerHTML = '';
+            loadImages();
+        });
 
-      const src = `images/work${idx}.png`;
-      // 当图片加载成功，替换骨架
-      img.onload = () => {
-        container.innerHTML = '';
-        container.appendChild(img);
-        consecutiveImageErrors = 0; // 成功则重置错误计数
-      };
-      // 当图片加载失败（不存在或网络问题），移除占位
-      img.onerror = () => {
-        // 如果图片不存在或 404 ，直接移除该占位（继续加载下一张）
-        if (container && container.parentNode) {
-          container.parentNode.removeChild(container);
+        // 加载图片函数
+        async function loadImages() {
+            if (!hasMoreImages || isLoading) return;
+            
+            isLoading = true;
+            let loadFailed = false;
+
+            // 添加骨架屏
+            for (let i = 0; i < batchSize; i++) {
+                const skeleton = document.createElement('div');
+                skeleton.className = 'skeleton';
+                skeleton.id = `skeleton-${currentImageIndex + i}`;
+                imageContainer.appendChild(skeleton);
+            }
+
+            try {
+                // 批量加载图片
+                const loadPromises = [];
+                for (let i = 0; i < batchSize; i++) {
+                    const imageIndex = currentImageIndex + i;
+                    loadPromises.push(loadSingleImage(imageIndex));
+                }
+
+                const results = await Promise.allSettled(loadPromises);
+                
+                // 检查是否所有图片都加载失败
+                const failedCount = results.filter(res => res.status === 'rejected').length;
+                if (failedCount === batchSize) {
+                    hasMoreImages = false;
+                    // 如果是第一次加载就失败，显示错误提示
+                    if (currentImageIndex === 1) {
+                        showError();
+                    }
+                }
+
+                currentImageIndex += batchSize;
+            } catch (error) {
+                showError();
+            } finally {
+                isLoading = false;
+            }
         }
-        consecutiveImageErrors++;
-        if (consecutiveImageErrors >= ERROR_THRESHOLD || !navigator.onLine) {
-          showOffline();
+
+        // 加载单张图片
+        async function loadSingleImage(index) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.src = `images/work${index}.png`;
+                img.className = 'work-image';
+                img.alt = `设计作品 ${index}`;
+
+                // 图片加载成功
+                img.onload = () => {
+                    const skeleton = document.getElementById(`skeleton-${index}`);
+                    if (skeleton) {
+                        skeleton.replaceWith(img);
+                    } else {
+                        imageContainer.appendChild(img);
+                    }
+                    resolve(index);
+                };
+
+                // 图片加载失败
+                img.onerror = () => {
+                    const skeleton = document.getElementById(`skeleton-${index}`);
+                    if (skeleton) skeleton.remove();
+                    reject(index);
+                };
+
+                // 超时处理（5秒）
+                setTimeout(() => {
+                    reject(new Error(`图片加载超时: work${index}.png`));
+                }, 5000);
+            });
         }
-      };
-      // 触发加载
-      img.src = src;
-    }
 
-    // 加载下一批（受网络质量影响）
-    function loadNextBatch(){
-      if (!navigator.onLine) {
-        showOffline();
-        return;
-      }
-      const batch = getBatchSize();
-      let loaded = 0;
-      while (pointer < indices.length && loaded < batch) {
-        const idx = indices[pointer++];
-        // 每次都先创建骨架
-        const container = createSkeleton(idx);
-        // 启动加载（图片 onload 会替换骨架）
-        loadImageAtIndex(idx, container);
-        loaded++;
-      }
-    }
-
-    // 当页面接近底部时触发加载
-    function handleScroll(){
-      const scrollPos = window.scrollY + window.innerHeight;
-      const totalHeight = document.documentElement.scrollHeight;
-      // 当离底部还有 800px 时开始加载下一批（可以调）
-      if (totalHeight - scrollPos < 800) {
-        loadNextBatch();
-      }
-    }
-
-    // 显示网络异常覆盖层
-    function showOffline(){
-      offlineOverlay.style.display = 'flex';
-    }
-    function hideOffline(){
-      offlineOverlay.style.display = 'none';
-    }
-    reloadBtn.addEventListener('click', () => {
-      // 尽力刷新页面并回到顶部
-      hideOffline();
-      window.location.reload(true);
-    });
-
-    // 初始化：先把指针归 0，加载首批
-    function init(){
-      // 强制回到顶部（刷新时）
-      try { window.scrollTo(0,0); } catch(e){}
-      pointer = 0;
-      consecutiveImageErrors = 0;
-      // 先加载首批
-      loadNextBatch();
-    }
-
-    // 监听滚动加载更多
-    window.addEventListener('scroll', handleScroll);
-    // 监听在线/离线状态
-    window.addEventListener('online', () => {
-      hideOffline();
-      // 如果还有没加载的，继续加载
-      loadNextBatch();
-    });
-    window.addEventListener('offline', () => {
-      showOffline();
-    });
-
-    // 防止右键、Ctrl+S、Ctrl+U 等常见快捷键（尽力阻止）
-    document.addEventListener('contextmenu', (e) => {
-      // 对页面的默认右键进行阻止（会阻止所有右键）
-      e.preventDefault();
-    });
-    document.addEventListener('keydown', (e) => {
-      // 阻止 Ctrl/Cmd + S, U, Shift+Ctrl+I, F12 等（尽力）
-      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S' || e.key === 'u' || e.key === 'U')) {
-        e.preventDefault();
-      }
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'i')) {
-        e.preventDefault();
-      }
-      if (e.key === 'F12') e.preventDefault();
-    });
-
-    // 刷新页面时确保滚到顶部（补充）
-    window.onbeforeunload = function(){ window.scrollTo(0,0); };
-
-    // 启动
-    init();
-
-    // 如果用户滚动到最底部（或首次就短页面），触发更多加载
-    // 以防首批后页面仍然短，反复触发直到指针到末尾
-    const shortPageObserver = new MutationObserver(() => {
-      if (document.documentElement.scrollHeight <= window.innerHeight + 200 && pointer < indices.length) {
-        loadNextBatch();
-      }
-    });
-    shortPageObserver.observe(gallery, {childList:true, subtree:true});
-  </script>
+        // 显示网络错误提示
+        function showError() {
+            errorContainer.classList.remove('hidden');
+        }
+    </script>
 </body>
 </html>
