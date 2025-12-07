@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UI设计作品集</title>
     
-    <!-- Favicon设置 - 修复路径和缓存问题 -->
+    <!-- Favicon设置 -->
     <link rel="apple-touch-icon" sizes="180x180" href="./favicon_io/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="./favicon_io/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="./favicon_io/favicon-16x16.png">
@@ -56,8 +56,8 @@
             width: 100%;
             height: auto;
             display: block;
-            pointer-events: none; /* 防止图片被拖动 */
-            user-select: none; /* 防止图片被选中 */
+            pointer-events: none;
+            user-select: none;
         }
         
         /* 骨架屏样式 */
@@ -111,9 +111,7 @@
 </head>
 <body>
     <div class="container">
-        <div class="image-container" id="imageContainer">
-            <!-- 图片将通过JavaScript动态加载 -->
-        </div>
+        <div class="image-container" id="imageContainer"></div>
     </div>
     
     <div class="error-container" id="errorContainer">
@@ -121,122 +119,104 @@
         <button class="reload-button" id="reloadButton">重新加载</button>
     </div>
 
+    <!-- ⭐ 这是完整嵌入的新优化 JS ⭐ -->
     <script>
-        // 图片配置
-        const MAX_IMAGES = 50; // 最大图片数量
+        const MAX_IMAGES = 50;
         const IMAGE_PREFIX = 'work';
         const IMAGE_EXTENSION = '.png';
         const IMAGES_FOLDER = 'images/';
-        
-        // DOM元素
+
         const imageContainer = document.getElementById('imageContainer');
         const errorContainer = document.getElementById('errorContainer');
         const reloadButton = document.getElementById('reloadButton');
-        
-        // 图片加载状态
-        let loadedImages = 0;
-        let totalImages = 0;
-        let hasError = false;
-        
-        // 初始化函数
-        function init() {
-            loadImages();
-            setupEventListeners();
-        }
-        
-        // 设置事件监听器
-        function setupEventListeners() {
-            // 重新加载按钮点击事件
-            reloadButton.addEventListener('click', function() {
-                location.reload();
-            });
-            
-            // 页面刷新时回到顶部
-            window.onbeforeunload = function() {
-                window.scrollTo(0, 0);
-            };
-            
-            // 禁止右键菜单和图片拖拽
-            document.addEventListener('contextmenu', function(e) {
-                e.preventDefault();
-            });
-            
-            document.addEventListener('dragstart', function(e) {
-                if (e.target.tagName === 'IMG') {
-                    e.preventDefault();
+
+        let firstLoaded = false;
+        let consecutiveErrors = 0;
+        const ERROR_LIMIT = 10; // 连续失败上限
+
+        // 懒加载观察器
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const skeleton = entry.target;
+                    const index = skeleton.dataset.index;
+                    loadImage(index);
+                    observer.unobserve(skeleton);
                 }
             });
+        });
+
+        // 创建骨架屏
+        function createSkeleton(index) {
+            const skeleton = document.createElement('div');
+            skeleton.className = 'skeleton';
+            skeleton.dataset.index = index;
+            observer.observe(skeleton);
+            imageContainer.appendChild(skeleton);
         }
-        
-        // 加载图片函数
-        function loadImages() {
-            // 创建骨架屏
-            for (let i = 1; i <= MAX_IMAGES; i++) {
-                const skeletonDiv = document.createElement('div');
-                skeletonDiv.className = 'skeleton';
-                skeletonDiv.id = `skeleton-${i}`;
-                imageContainer.appendChild(skeletonDiv);
-            }
-            
-            // 尝试加载图片
-            for (let i = 1; i <= MAX_IMAGES; i++) {
-                const img = new Image();
-                img.src = IMAGES_FOLDER + IMAGE_PREFIX + i + IMAGE_EXTENSION;
-                
-                img.onload = function() {
-                    // 图片加载成功
-                    loadedImages++;
-                    replaceSkeletonWithImage(i, img.src);
-                    
-                    // 检查是否所有图片都已加载
-                    if (loadedImages === totalImages && !hasError) {
-                        // 所有图片加载完成
-                        console.log('所有图片加载完成');
-                    }
-                };
-                
-                img.onerror = function() {
-                    // 图片加载失败
-                    if (i === 1) {
-                        // 如果第一张图片就加载失败，可能是网络问题
-                        showError();
-                        hasError = true;
-                    } else if (i > 1 && loadedImages === 0) {
-                        // 如果之前没有成功加载任何图片，可能是网络问题
-                        showError();
-                        hasError = true;
-                    }
-                    // 移除对应的骨架屏
-                    const skeleton = document.getElementById(`skeleton-${i}`);
-                    if (skeleton) {
-                        skeleton.remove();
-                    }
-                };
-            }
+
+        // 加载图片
+        function loadImage(i) {
+            const img = new Image();
+            img.src = `${IMAGES_FOLDER}${IMAGE_PREFIX}${i}${IMAGE_EXTENSION}`;
+            img.loading = "lazy";
+
+            img.onload = () => {
+                firstLoaded = true;
+                consecutiveErrors = 0;
+                replaceSkeleton(i, img.src);
+            };
+
+            img.onerror = () => {
+                consecutiveErrors++;
+
+                // 连续失败上限 → 才判断网络问题
+                if (!firstLoaded && consecutiveErrors >= ERROR_LIMIT) {
+                    showError();
+                }
+
+                removeSkeleton(i);
+            };
         }
-        
-        // 用实际图片替换骨架屏
-        function replaceSkeletonWithImage(index, src) {
-            const skeleton = document.getElementById(`skeleton-${index}`);
-            if (skeleton) {
-                const imgElement = document.createElement('img');
-                imgElement.src = src;
-                imgElement.alt = `作品 ${index}`;
-                
-                const imageItem = document.createElement('div');
-                imageItem.className = 'image-item';
-                imageItem.appendChild(imgElement);
-                
-                skeleton.replaceWith(imageItem);
-            }
+
+        // 替换骨架屏
+        function replaceSkeleton(index, src) {
+            const skeleton = document.querySelector(`.skeleton[data-index="${index}"]`);
+            if (!skeleton) return;
+
+            const imageItem = document.createElement('div');
+            imageItem.className = 'image-item';
+
+            const img = document.createElement('img');
+            img.src = src;
+            img.alt = `作品 ${index}`;
+            img.loading = "lazy";
+
+            imageItem.appendChild(img);
+            skeleton.replaceWith(imageItem);
         }
-        
-        // 显示错误提示
+
+        // 移除骨架屏（图片失败）
+        function removeSkeleton(index) {
+            const skeleton = document.querySelector(`.skeleton[data-index="${index}"]`);
+            if (skeleton) skeleton.remove();
+        }
+
         function showError() {
             errorContainer.style.display = 'flex';
         }
-        
+
         // 初始化
+        function init() {
+            for (let i = 1; i <= MAX_IMAGES; i++) {
+                createSkeleton(i);
+            }
+
+            reloadButton.onclick = () => location.reload();
+
+            document.addEventListener('contextmenu', e => e.preventDefault());
+        }
+
         window.onload = init;
     </script>
 </body>
