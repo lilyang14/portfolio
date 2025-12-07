@@ -1,290 +1,179 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>作品集</title>
-
-  <!-- Favicon（使用你提供的favicon_io文件夹里的文件） -->
-  <link rel="apple-touch-icon" sizes="180x180" href="favicon_io/apple-touch-icon.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="favicon_io/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="favicon_io/favicon-16x16.png">
-  <link rel="manifest" href="favicon_io/site.webmanifest">
-  <meta name="theme-color" content="#1C1C1C">
-
-  <style>
-    /* 全局重置（简洁） */
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html,body { height: 100%; }
-
-    body {
-      background: #1C1C1C;                 /* 背景色 */
-      color: #FFFFFF;
-      font-family: -apple-system, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", Arial;
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-      min-height: 100%;
-    }
-
-    /* 页面内容容器 */
-    .page {
-      padding-top: 60px;                   /* 内容区顶部 60 */
-      display: flex;
-      justify-content: center;
-    }
-
-    /* 图片列表容器：桌面宽度为页面宽度的65%，最大1200px；手机上100% */
-    .gallery {
-      width: 100%;
-      max-width: 1200px;
-      /* on desktop use 65% of viewport */
-      max-width: min(1200px, 65vw);
-    }
-
-    /* 单列布局（每张同宽、高度自适应），图片间无间距 */
-    .gallery-item {
-      display: block;
-      width: 100%;
-      margin: 0;            /* 0间距 */
-      position: relative;
-      overflow: hidden;
-      background: transparent;
-    }
-
-    /* 图片本体，宽度100%，高度自适应；object-fit: cover 用于 Fill 效果 */
-    .gallery-item img {
-      width: 100%;
-      height: auto;
-      display: block;
-      -webkit-user-drag: none; /* 禁止拖动图片 */
-      user-select: none;       /* 禁止选中 */
-      object-fit: fill;        /* 按请求使用 Fill 行为（图片会填满容器） */
-      pointer-events: none;    /* 禁止右键直接点到图片（另外还阻止右键） */
-    }
-
-    /* 骨架占位（白色 20%）高度 1080 */
-    .skeleton {
-      width: 100%;
-      height: 1080px;                 /* 固定高度（按要求） */
-      background: rgba(255,255,255,0.20); /* FFFFFF 20% */
-      display: block;
-    }
-
-    /* 网络异常覆盖层（整体居中） */
-    .offline-overlay {
-      position: fixed;
-      inset: 0;
-      display: none;                 /* 默认隐藏 */
-      align-items: center;
-      justify-content: center;
-      background: rgba(0,0,0,0.6);
-      z-index: 9999;
-    }
-    .offline-sheet {
-      text-align: center;
-      color: #FFFFFF;               /* 文案白色 */
-      background: transparent;
-    }
-    .offline-sheet p {
-      margin-bottom: 20px;          /* 文案下加一个button，间距20 */
-      font-size: 16px;
-    }
-    /* 按钮样式：宽96，高36，字体14px，文字白色 */
-    .reload-btn {
-      width: 96px;
-      height: 36px;
-      line-height: 36px;
-      font-size: 14px;
-      border: none;
-      cursor: pointer;
-      border-radius: 4px;
-      background: rgba(255,255,255,0.20); /* Fill，FFFFFF，20% */
-      color: #FFFFFF;                    /* 文案白色 */
-    }
-
-    /* 小屏（手机）上图片占满宽度（容器本身会变为 100%） */
-    @media (max-width: 800px) {
-      .gallery { max-width: 100%; width: 100%; padding: 0 0; }
-      .skeleton { height: 1080px; } /* 依然 1080 */
-    }
-
-    /* 页面滚动时让图片紧贴（无额外空隙） */
-    .gallery-item + .gallery-item { margin-top: 0; }
-
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>作品集</title>
+    <link rel="icon" type="image/x-icon" href="favicon_io/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon_io/favicon-16x16.png">
+    <link rel="manifest" href="favicon_io/site.webmanifest">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background-color: #1C1C1C;
+            padding-top: 60px;
+            font-family: Arial, sans-serif;
+            color: #FFFFFF;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        @media (min-width: 768px) {
+            .container {
+                width: 65%;
+            }
+        }
+        
+        .gallery {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+        
+        .image-item {
+            width: 100%;
+            position: relative;
+        }
+        
+        .image-item img {
+            width: 100%;
+            height: auto;
+            display: block;
+            pointer-events: none;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+        
+        .skeleton {
+            width: 100%;
+            height: 1080px;
+            background-color: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .error-message {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .error-message p {
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+        
+        .reload-btn {
+            background-color: rgba(255, 255, 255, 0.2);
+            border: none;
+            width: 96px;
+            height: 36px;
+            color: #FFFFFF;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        
+        .reload-btn:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+    </style>
 </head>
 <body>
-  <div class="page">
-    <main class="gallery" id="gallery" aria-live="polite">
-      <!-- JS 会在这里动态插入 .gallery-item（图片或骨架） -->
-    </main>
-  </div>
-
-  <!-- 网络异常提示 -->
-  <div class="offline-overlay" id="offlineOverlay" role="alert" aria-hidden="true">
-    <div class="offline-sheet">
-      <p>网络异常，请重新加载</p>
-      <button class="reload-btn" id="reloadBtn">重新加载</button>
+    <div class="container">
+        <div class="gallery" id="gallery">
+            <!-- 图片将通过JavaScript动态加载 -->
+        </div>
+        <div class="error-message" id="errorMessage">
+            <p>网络异常，请重新加载</p>
+            <button class="reload-btn" id="reloadBtn">重新加载</button>
+        </div>
     </div>
-  </div>
 
-  <script>
-    (function () {
-      const gallery = document.getElementById('gallery');
-      const offlineOverlay = document.getElementById('offlineOverlay');
-      const reloadBtn = document.getElementById('reloadBtn');
-
-      // 页面刷新时确保回到顶部
-      window.scrollTo(0,0);
-
-      // 禁用图片右键和拖动（防复制/下载）
-      document.addEventListener('contextmenu', function (e) {
-        // 如果右键是在图片或 gallery 内，则阻止
-        if (e.target && (e.target.tagName === 'IMG' || e.target.closest('.gallery'))) {
-          e.preventDefault();
+    <script>
+        // 图片文件列表（按名称排序）
+        const imageFiles = [
+            'work1.png', 'work2.png', 'work3.png', 'work4.png',
+            'work5.png', 'work6.png', 'work7.png', 'work8.png'
+        ];
+        
+        const gallery = document.getElementById('gallery');
+        const errorMessage = document.getElementById('errorMessage');
+        const reloadBtn = document.getElementById('reloadBtn');
+        
+        // 创建图片元素
+        function createImageElements() {
+            imageFiles.forEach(filename => {
+                const imageItem = document.createElement('div');
+                imageItem.className = 'image-item';
+                
+                const skeleton = document.createElement('div');
+                skeleton.className = 'skeleton';
+                skeleton.id = `skeleton-${filename}`;
+                
+                const img = document.createElement('img');
+                img.src = `images/${filename}`;
+                img.alt = `作品 ${filename.replace('work', '').replace('.png', '')}`;
+                img.style.display = 'none';
+                img.onload = function() {
+                    document.getElementById(`skeleton-${filename}`).style.display = 'none';
+                    img.style.display = 'block';
+                };
+                img.onerror = function() {
+                    showError();
+                };
+                
+                // 防止右键菜单和拖拽
+                img.addEventListener('contextmenu', (e) => e.preventDefault());
+                img.setAttribute('draggable', 'false');
+                
+                imageItem.appendChild(skeleton);
+                imageItem.appendChild(img);
+                gallery.appendChild(imageItem);
+            });
         }
-      }, { passive: false });
-
-      // 重新加载按钮
-      reloadBtn.addEventListener('click', function () {
-        try { location.reload(); } catch (err) { window.location.href = window.location.href; }
-      });
-
-      // 网络判断：如果离线，则显示错误覆盖层
-      function updateOnlineStatus() {
-        if (!navigator.onLine) {
-          offlineOverlay.style.display = 'flex';
-          offlineOverlay.setAttribute('aria-hidden', 'false');
-        } else {
-          offlineOverlay.style.display = 'none';
-          offlineOverlay.setAttribute('aria-hidden', 'true');
+        
+        // 显示错误信息
+        function showError() {
+            gallery.style.display = 'none';
+            errorMessage.style.display = 'flex';
         }
-      }
-      window.addEventListener('online',  updateOnlineStatus);
-      window.addEventListener('offline', updateOnlineStatus);
-      updateOnlineStatus();
-
-      // 决定加载策略：
-      // 如果 navigator.connection 有 effectiveType 且是 '4g'，我们认为网络好，尝试 eager 全部加载；
-      // 否则用 lazy 加载并展示骨架，图片加载成功后替换骨架。
-      const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection || null;
-      const isFastNetwork = connection && connection.effectiveType && connection.effectiveType.toLowerCase() === '4g';
-      const loadStrategy = isFastNetwork ? 'eager' : 'lazy';
-
-      // 动态探测 images 文件夹下的 workN.png（1..maxCheck）。
-      // 我们会按名称顺序检测从 work1.png 开始，直到连续 5 个缺失后停止（避免无限尝试）。
-      // 这保证你后续增删图片不用改代码。
-      const maxIndexToCheck = 100;      // 最多尝试到 work100（足够）
-      const stopAfterMisses = 5;        // 连续缺失多少个就停止
-      const basePath = 'images/';
-      const fileExt = '.png';           // 你目前是 .png，若有 .jpg 需改
-      const foundFiles = [];
-
-      // Helper: 检查一个 URL 是否存在（使用 HEAD 优先，降级为 GET）
-      async function urlExists(url) {
-        try {
-          const resp = await fetch(url, { method: 'HEAD' });
-          return resp.ok;
-        } catch (err) {
-          // 某些服务端不接受 HEAD，退回到 GET（但不下载 body）
-          try {
-            const resp2 = await fetch(url, { method: 'GET' });
-            return resp2.ok;
-          } catch (e) {
-            return false;
-          }
-        }
-      }
-
-      // 主流程：按序检测并渲染占位（skeleton），随后加载图片
-      async function buildGallery() {
-        let consecutiveMisses = 0;
-        for (let i = 1; i <= maxIndexToCheck; i++) {
-          const filename = `work${i}${fileExt}`;
-          const url = basePath + filename;
-
-          const exists = await urlExists(url);
-          if (exists) {
-            foundFiles.push({ idx: i, url, name: filename });
-            consecutiveMisses = 0;
-          } else {
-            consecutiveMisses++;
-            // 若连续多次不存在，认为已经没新文件，停止检测
-            if (consecutiveMisses >= stopAfterMisses) break;
-          }
-        }
-
-        // 如果没找到任何图片，展示一个友好提示
-        if (foundFiles.length === 0) {
-          const msg = document.createElement('div');
-          msg.style.padding = '40px';
-          msg.style.textAlign = 'center';
-          msg.innerHTML = '<p>当前没有可展示的图片。请将 images 文件夹中以 <code>work1.png</code> 等命名的图片上传至仓库。</p>';
-          gallery.appendChild(msg);
-          return;
-        }
-
-        // 按名称顺序（已经按索引找到）渲染占位与图片加载逻辑
-        for (const f of foundFiles) {
-          // gallery item
-          const item = document.createElement('div');
-          item.className = 'gallery-item';
-          item.setAttribute('data-filename', f.name);
-
-          // skeleton 占位
-          const skeleton = document.createElement('div');
-          skeleton.className = 'skeleton';
-          skeleton.setAttribute('aria-hidden', 'true');
-          item.appendChild(skeleton);
-
-          // img 元素（先不加入 DOM 的图像节点，等待加载成功后替换 skeleton）
-          const img = document.createElement('img');
-          img.alt = f.name;
-          img.src = f.url;
-          img.draggable = false;            // 禁止拖动
-          img.loading = loadStrategy;       // eager 或 lazy
-          img.decoding = 'async';
-
-          // 当图片加载成功后，用图片替换骨架
-          img.addEventListener('load', function () {
-            // 移除 skeleton，并插入图片（确保没有多次插入）
-            if (item.contains(skeleton)) skeleton.remove();
-            // 允许 pointer-events: none 保持（防止复制）
-            item.appendChild(img);
-          });
-
-          img.addEventListener('error', function () {
-            // 图片加载失败：显示一个提示占位（也是骨架样式）
-            if (item.contains(skeleton)) {
-              // 可把 skeleton 保持不动，或添加错误提示
-              skeleton.style.background = 'rgba(255,0,0,0.12)';
-              skeleton.textContent = '图片加载失败';
-              skeleton.style.color = '#fff';
-              skeleton.style.display = 'flex';
-              skeleton.style.alignItems = 'center';
-              skeleton.style.justifyContent = 'center';
-              skeleton.style.fontSize = '14px';
+        
+        // 重新加载图片
+        function reloadImages() {
+            gallery.style.display = 'flex';
+            errorMessage.style.display = 'none';
+            
+            // 重新创建图片元素
+            while (gallery.firstChild) {
+                gallery.removeChild(gallery.firstChild);
             }
-          });
-
-          // 如果网络超慢或使用 lazy，我们仍显示 skeleton，图片会在 load 事件将其替换
-          gallery.appendChild(item);
-
-          // 如果策略是 eager（网络好），也就是全量加载：浏览器会尽力加载。
-          // 如果 lazy，浏览器会按需加载，当图片进入视窗时会触发 load（现代浏览器支持）。
+            
+            createImageElements();
         }
-
-        // 当所有图片的 load/error 都完成后，可以做一些清理或无缝滚动行为
-      }
-
-      // 先判断离线
-      if (!navigator.onLine) {
-        offlineOverlay.style.display = 'flex';
-      } else {
-        buildGallery();
-      }
-
-    })();
-  </script>
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            createImageElements();
+            reloadBtn.addEventListener('click', reloadImages);
+        });
+    </script>
 </body>
 </html>
