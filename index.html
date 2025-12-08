@@ -49,23 +49,38 @@
       transition: opacity 0.25s ease;
     }
 
+    .gallery img.loaded {
+      opacity: 1;
+    }
+
     /* 骨架屏样式 */
-    .skeleton {
+    .skeleton-item {
       width: 100%;
       height: 300px;
-      background: linear-gradient(90deg, #2d2d2d 25%, #3a3a3a 50%, #2d2d2d 75%);
-      background-size: 200% 100%;
-      animation: loading 1.5s infinite;
+      background: #2d2d2d;
       margin-bottom: 20px;
       border-radius: 4px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .skeleton-item::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+      animation: loading 1.5s infinite;
     }
 
     @keyframes loading {
       0% {
-        background-position: 200% 0;
+        left: -100%;
       }
       100% {
-        background-position: -200% 0;
+        left: 100%;
       }
     }
 
@@ -74,7 +89,7 @@
         width: 100%;
         max-width: 100%;
       }
-      .skeleton {
+      .skeleton-item {
         height: 200px;
       }
     }
@@ -115,10 +130,7 @@
 
 <body>
   <main class="page">
-    <section id="gallery" class="gallery" aria-live="polite">
-      <!-- 骨架屏占位符将在加载时显示 -->
-      <div id="skeleton-container"></div>
-    </section>
+    <section id="gallery" class="gallery" aria-live="polite"></section>
   </main>
 
   <div id="network-error">
@@ -131,7 +143,6 @@
     window.addEventListener("load", () => window.scrollTo(0, 0));
 
     const gallery = document.getElementById("gallery");
-    const skeletonContainer = document.getElementById("skeleton-container");
     const errorBox = document.getElementById("network-error");
     const reloadBtn = document.getElementById("reload-btn");
     reloadBtn.onclick = () => location.reload();
@@ -142,32 +153,35 @@
     const stopAfterMiss = 10; // 连续缺失停止
 
     let misses = 0;
-
-    // 创建骨架屏
-    function createSkeletons(count) {
-      skeletonContainer.innerHTML = '';
-      for (let i = 0; i < count; i++) {
-        const skeleton = document.createElement('div');
-        skeleton.className = 'skeleton';
-        skeletonContainer.appendChild(skeleton);
-      }
-    }
-
-    // 初始创建10个骨架屏
-    createSkeletons(10);
+    let skeletonCount = 0;
 
     function loadImage(i) {
       if (i > maxIndex || misses >= stopAfterMiss) {
-        // 加载完成后移除骨架屏
-        skeletonContainer.style.display = 'none';
+        // 加载完成后移除所有骨架屏
+        const skeletons = document.querySelectorAll('.skeleton-item');
+        skeletons.forEach(skeleton => {
+          skeleton.style.display = 'none';
+        });
         return;
       }
+
+      // 创建骨架屏
+      const skeleton = document.createElement('div');
+      skeleton.className = 'skeleton-item';
+      skeleton.id = `skeleton-${i}`;
+      gallery.appendChild(skeleton);
+      skeletonCount++;
 
       let extIndex = 0;
 
       function tryExt() {
         if (extIndex >= exts.length) {
           misses++;
+          // 如果图片不存在，移除对应的骨架屏
+          const skeletonToRemove = document.getElementById(`skeleton-${i}`);
+          if (skeletonToRemove) {
+            skeletonToRemove.remove();
+          }
           loadImage(i + 1);
           return;
         }
@@ -178,15 +192,14 @@
 
         img.onload = () => {
           misses = 0;
-          img.style.opacity = "1";
-          gallery.appendChild(img);
+          img.classList.add('loaded');
           
-          // 当加载到第i张图片时，移除对应的骨架屏
-          if (i <= 10) {
-            const skeletons = skeletonContainer.querySelectorAll('.skeleton');
-            if (skeletons.length > 0) {
-              skeletons[0].remove();
-            }
+          // 找到对应的骨架屏并替换
+          const skeletonToReplace = document.getElementById(`skeleton-${i}`);
+          if (skeletonToReplace) {
+            gallery.replaceChild(img, skeletonToReplace);
+          } else {
+            gallery.appendChild(img);
           }
           
           loadImage(i + 1);
@@ -204,6 +217,7 @@
       tryExt();
     }
 
+    // 初始加载
     loadImage(1);
 
     /* 网络异常 */
