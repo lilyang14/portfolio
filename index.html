@@ -109,57 +109,82 @@
     const reloadBtn = document.getElementById("reload-btn");
     reloadBtn.onclick = () => location.reload();
 
-    /* 稳定、无闪烁的加载器：严格顺序 + 单线程 */
+    /* 加载优化：批量并行加载 */
     const exts = ["png", "jpg", "jpeg"]; // 支持格式
     const maxIndex = 1000; // 上限
     const stopAfterMiss = 10; // 连续缺失停止
+    const batchSize = 3; // 一次加载3张（可调整为3-5）
+    let currentIndex = 1; // 当前加载索引
+    let misses = 0; // 连续缺失计数
 
-    let misses = 0;
+    // 尝试加载单张图片（返回Promise）
+    function tryLoadImage(i) {
+      return new Promise((resolve) => {
+        let extIndex = 0;
 
-    function loadImage(i) {
-      if (i > maxIndex || misses >= stopAfterMiss) return;
+        function tryExt() {
+          if (extIndex >= exts.length) {
+            // 所有格式都尝试失败
+            misses++;
+            resolve(false);
+            return;
+          }
 
-      let extIndex = 0;
+          const ext = exts[extIndex++];
+          const src = `images/work${i}.${ext}`;
+          const img = new Image();
 
-      function tryExt() {
-        if (extIndex >= exts.length) {
-          misses++;
-          loadImage(i + 1);
-          return;
+          img.onload = () => {
+            misses = 0; // 重置连续缺失计数
+            img.style.opacity = "1";
+            img.draggable = false;
+            img.addEventListener("contextmenu", (e) => e.preventDefault());
+            img.addEventListener("dragstart", (e) => e.preventDefault());
+            gallery.appendChild(img);
+            resolve(true);
+          };
+
+          img.onerror = () => tryExt();
+          img.src = src;
         }
 
-        const ext = exts[extIndex++];
-        const src = `images/work${i}.${ext}`;
-        const img = new Image();
-
-        img.onload = () => {
-          misses = 0;
-          img.style.opacity = "1";
-          gallery.appendChild(img);
-          loadImage(i + 1);
-        };
-
-        img.onerror = () => tryExt();
-
-        img.draggable = false;
-        img.addEventListener("contextmenu", (e) => e.preventDefault());
-        img.addEventListener("dragstart", (e) => e.preventDefault());
-
-        img.src = src;
-      }
-
-      tryExt();
+        tryExt();
+      });
     }
 
-    loadImage(1);
+    // 加载一个批次的图片
+    async function loadBatch() {
+      // 检查停止条件
+      if (currentIndex > maxIndex || misses >= stopAfterMiss) {
+        return;
+      }
 
-    /* 网络异常 */
+      // 计算当前批次需要加载的图片索引
+      const batchPromises = [];
+      const endIndex = Math.min(currentIndex + batchSize - 1, maxIndex);
+      
+      // 批量创建加载任务
+      for (let i = currentIndex; i <= endIndex; i++) {
+        batchPromises.push(tryLoadImage(i));
+      }
+
+      // 等待当前批次所有图片加载完成（无论成功失败）
+      await Promise.all(batchPromises);
+      
+      // 准备加载下一批
+      currentIndex = endIndex + 1;
+      loadBatch();
+    }
+
+    // 开始加载第一批
+    loadBatch();
+
+    /* 网络异常处理 */
     function showError() {
       errorBox.style.display = "flex";
     }
 
     if (!navigator.onLine) showError();
-
     window.addEventListener("offline", showError);
   </script>
 </body>
