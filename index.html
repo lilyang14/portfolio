@@ -214,7 +214,7 @@
           im.onload = () => resolve({ok:true, path});
           im.onerror = () => resolve({ok:false, path});
           // force no-cache attempt (避免某些环境缓存 404) — 仅当服务器允许
-          im.src = path + '?_ts=' + Date.now();
+          im.src = path;
         });
       }
 
