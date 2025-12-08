@@ -59,22 +59,22 @@
     /* 错误提示 */
     #network-error {
       position: fixed;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(28, 28, 28, 0.95);
-      color: #fff;
-      padding: 28px;
-      border-radius: 8px;
+      left: 0;
+      top: 0;
+      right: 0;
+      bottom: 0;
       display: none;
       flex-direction: column;
-      text-align: center;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      background: rgba(28, 28, 28, 0.95);
       z-index: 9999;
     }
 
     #network-error p {
-      margin: 0 0 20px 0;
-      font-size: 16px;
+      margin: 0;
+      font-size: 20px;
     }
 
     #network-error button {
@@ -96,7 +96,7 @@
   </main>
 
   <div id="network-error">
-    <p>网络异常，请重新加载</p>
+    <p>网络连接异常</p>
     <button id="reload-btn">重新加载</button>
   </div>
 
