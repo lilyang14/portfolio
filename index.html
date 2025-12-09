@@ -6,7 +6,6 @@
   <title>作品集</title>
   
   <!-- ========== 修正的Favicon设置 ========== -->
-  <!-- 使用相对于根目录的路径，确保任何页面都能正确访问 -->
   <link rel="apple-touch-icon" sizes="180x180" href="/favicon_io/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon_io/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon_io/favicon-16x16.png">
@@ -15,16 +14,9 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/favicon_io/android-chrome-192x192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="/favicon_io/android-chrome-512x512.png">
 
-  <!-- 强制浏览器不缓存favicon和页面 -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-
-  <!-- 为favicon添加版本号，强制更新 -->
-  <link rel="apple-touch-icon" sizes="180x180" href="/favicon_io/apple-touch-icon.png?v=2">
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon_io/favicon-32x32.png?v=2">
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon_io/favicon-16x16.png?v=2">
-  <link rel="shortcut icon" href="/favicon_io/favicon.ico?v=2" type="image/x-icon">
 
   <style>
     /* ---------- 基础样式 ---------- */
@@ -41,12 +33,76 @@
     .gallery img {
       width: 100%; height: auto; display: block;
       -webkit-user-drag: none; user-drag: none;
-      /* 简单的淡入动画，提升加载体验 */
       animation: fadeIn 0.5s ease-in;
     }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-    /* ---------- 网络异常提示 (毛玻璃版) ---------- */
+    /* ---------- 加载指示器 ---------- */
+    .loading-indicator {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      transition: opacity 0.3s, visibility 0.3s;
+    }
+    
+    .loading-indicator.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+    
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+      margin-bottom: 20px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .loading-text {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 16px;
+      text-align: center;
+      margin-top: 10px;
+    }
+    
+    .loading-progress {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 14px;
+      margin-top: 5px;
+    }
+    
+    /* ---------- 骨架屏加载占位符 ---------- */
+    .skeleton-item {
+      width: 100%;
+      height: 400px;
+      background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0.05) 25%, 
+        rgba(255, 255, 255, 0.08) 37%, 
+        rgba(255, 255, 255, 0.05) 63%);
+      background-size: 400% 100%;
+      animation: skeleton-loading 1.4s ease infinite;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    
+    @keyframes skeleton-loading {
+      0% { background-position: 100% 50%; }
+      100% { background-position: 0 50%; }
+    }
+    
+    /* ---------- 网络异常提示 ---------- */
     .overlay {
       position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
       background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px);
@@ -74,10 +130,33 @@
     .reload-btn:active { transform: translateY(1px); }
 
     /* ---------- 响应式 ---------- */
-    @media (min-width: 900px) { .gallery { width: 65vw; } }
+    @media (min-width: 900px) { 
+      .gallery { width: 65vw; } 
+      .skeleton-item { height: 500px; }
+    }
+    
+    @media (max-width: 600px) {
+      .loading-indicator { transform: translate(-50%, -50%) scale(0.9); }
+      .spinner { width: 40px; height: 40px; }
+      .loading-text { font-size: 14px; }
+    }
   </style>
 </head>
 <body>
+  <!-- 加载指示器 -->
+  <div class="loading-indicator" id="loadingIndicator">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingText">正在加载作品...</div>
+    <div class="loading-progress" id="loadingProgress"></div>
+  </div>
+  
+  <!-- 骨架屏占位符 -->
+  <div id="skeletonContainer" style="display: none;">
+    <div class="skeleton-item"></div>
+    <div class="skeleton-item"></div>
+    <div class="skeleton-item"></div>
+  </div>
+
   <div class="wrap">
     <main class="gallery" id="gallery"></main>
   </div>
@@ -94,37 +173,73 @@
   <script>
     // --- 配置 ---
     const CONFIG = {
-      maxIndex: 5000,       // 最大编号
-      stopThreshold: 6,     // 连续失败停止阈值
-      concurrency: 5,       // 并发请求数量 (同时查5张)
-      exts: ['.png', '.jpg', '.jpeg', '.webp']
+      maxIndex: 5000,
+      stopThreshold: 6,
+      concurrency: 5,
+      exts: ['.png', '.jpg', '.jpeg', '.webp'],
+      // 加载超时时间（毫秒）
+      loadingTimeout: 10000,
+      // 最小加载显示时间（防止闪烁）
+      minLoadingTime: 800
     };
 
     // --- 状态 ---
     const state = {
-      currentIndex: 1,      // 当前正在处理的序号
-      renderIndex: 1,       // 当前可以渲染到界面的序号 (保证顺序)
+      currentIndex: 1,
+      renderIndex: 1,
       failCount: 0,
-      activeRequests: 0,    // 当前活跃的请求数
-      buffer: {},           // 缓存已下载但未显示的图片 { index: imgElement }
-      isStopped: false
+      activeRequests: 0,
+      buffer: {},
+      isStopped: false,
+      totalLoaded: 0,
+      isLoading: true,
+      startTime: null,
+      hasShownSkeleton: false
     };
 
     const els = {
       gallery: document.getElementById('gallery'),
       overlay: document.getElementById('overlay'),
       msg: document.getElementById('overlay-msg'),
-      btn: document.getElementById('reloadBtn')
+      btn: document.getElementById('reloadBtn'),
+      loadingIndicator: document.getElementById('loadingIndicator'),
+      loadingText: document.getElementById('loadingText'),
+      loadingProgress: document.getElementById('loadingProgress'),
+      skeletonContainer: document.getElementById('skeletonContainer')
     };
 
     // --- 初始化 ---
-    window.onload = () => { window.scrollTo(0,0); startLoading(); };
+    window.onload = () => {
+      window.scrollTo(0,0);
+      state.startTime = Date.now();
+      
+      // 设置加载超时检测
+      const timeoutId = setTimeout(() => {
+        if (state.isLoading && state.totalLoaded === 0) {
+          updateLoadingText('网络较慢，正在努力加载中...');
+        }
+      }, 3000);
+      
+      startLoading();
+      
+      // 最小显示时间控制
+      const minLoadingTime = CONFIG.minLoadingTime;
+      const elapsed = Date.now() - state.startTime;
+      if (elapsed < minLoadingTime) {
+        setTimeout(hideLoadingIndicator, minLoadingTime - elapsed);
+      }
+    };
+
     els.btn.onclick = () => location.reload();
     setupProtection();
 
     // --- 核心加载逻辑 ---
     function startLoading() {
-      // 只要没停止，且活跃请求没满，就发射新请求
+      // 如果没有显示过骨架屏，且还没有加载到图片，显示骨架屏
+      if (!state.hasShownSkeleton && state.totalLoaded === 0) {
+        showSkeleton();
+      }
+      
       while (!state.isStopped && state.activeRequests < CONFIG.concurrency) {
         processIndex(state.currentIndex++);
       }
@@ -136,60 +251,118 @@
       state.activeRequests++;
       let img = null;
 
-      // 尝试所有后缀
       for (let ext of CONFIG.exts) {
         const path = `images/work${idx}${ext}`;
         const res = await testImage(path);
         if (res) {
           img = createImg(path);
-          break; // 找到即止
+          break;
         }
       }
 
       state.activeRequests--;
       handleResult(idx, img);
       
-      // 递归维持并发
+      // 更新加载进度
+      updateLoadingProgress();
+      
       startLoading();
     }
 
     function handleResult(idx, imgElement) {
-      // 1. 存入缓存或标记失败
-      state.buffer[idx] = imgElement; // 没找到就是 null
+      state.buffer[idx] = imgElement;
 
-      // 2. 尝试按顺序渲染 (必须等待 renderIndex 对应的图片处理完)
       while (state.buffer.hasOwnProperty(state.renderIndex)) {
         const currentImg = state.buffer[state.renderIndex];
         
         if (currentImg) {
-          // 成功：重置失败计数，上屏
           state.failCount = 0;
+          state.totalLoaded++;
+          
+          // 如果有骨架屏，先移除
+          if (state.hasShownSkeleton && els.skeletonContainer.style.display !== 'none') {
+            hideSkeleton();
+          }
+          
+          // 添加图片
           els.gallery.appendChild(currentImg);
+          
+          // 如果是第一张图片，准备隐藏加载指示器
+          if (state.totalLoaded === 1) {
+            hideLoadingIndicator();
+          }
         } else {
-          // 失败：增加计数
           state.failCount++;
         }
 
-        // 清理缓存，指针后移
         delete state.buffer[state.renderIndex];
         state.renderIndex++;
 
-        // 检查停止条件
         if (state.failCount >= CONFIG.stopThreshold) {
           state.isStopped = true;
-          // 如果一张图都没刷出来，报错
-          if (els.gallery.children.length === 0) showOverlay();
+          if (els.gallery.children.length === 0) {
+            hideSkeleton();
+            hideLoadingIndicator();
+            showOverlay();
+          }
           return;
         }
       }
+    }
+
+    // --- 加载状态管理 ---
+    function updateLoadingText(text) {
+      if (els.loadingText) {
+        els.loadingText.textContent = text;
+      }
+    }
+
+    function updateLoadingProgress() {
+      if (els.loadingProgress && state.currentIndex > 1) {
+        const progress = Math.min(100, Math.floor((state.currentIndex / CONFIG.maxIndex) * 100));
+        els.loadingProgress.textContent = `正在扫描作品 ${state.currentIndex}/${CONFIG.maxIndex}`;
+      }
+    }
+
+    function hideLoadingIndicator() {
+      if (!state.isLoading) return;
+      
+      state.isLoading = false;
+      els.loadingIndicator.classList.add('hidden');
+      
+      // 如果已经加载了内容，完全移除加载指示器
+      if (state.totalLoaded > 0) {
+        setTimeout(() => {
+          els.loadingIndicator.style.display = 'none';
+        }, 500);
+      }
+    }
+
+    function showSkeleton() {
+      state.hasShownSkeleton = true;
+      els.skeletonContainer.style.display = 'block';
+      els.gallery.appendChild(els.skeletonContainer);
+    }
+
+    function hideSkeleton() {
+      els.skeletonContainer.style.display = 'none';
     }
 
     // --- 辅助函数 ---
     function createImg(src) {
       const img = document.createElement('img');
       img.src = src;
-      // 这里的策略：前3张 eager (立即)，后面 lazy (懒加载)
       img.loading = els.gallery.children.length < 3 ? 'eager' : 'lazy';
+      
+      // 添加加载完成的动画
+      img.onload = () => {
+        img.style.opacity = '0';
+        setTimeout(() => {
+          img.style.transition = 'opacity 0.5s ease';
+          img.style.opacity = '1';
+        }, 50);
+      };
+      
       return img;
     }
 
@@ -199,6 +372,14 @@
         img.onload = () => resolve(true);
         img.onerror = () => resolve(false);
         img.src = path;
+        
+        // 添加超时检测
+        setTimeout(() => {
+          if (!img.complete) {
+            img.src = ''; // 中断加载
+            resolve(false);
+          }
+        }, 5000);
       });
     }
 
@@ -208,12 +389,23 @@
     }
 
     function setupProtection() {
-      // 简单保护：禁右键、拖拽
       document.oncontextmenu = document.ondragstart = () => false;
       window.onkeydown = (e) => {
         if ((e.ctrlKey || e.metaKey) && ['s','u'].includes(e.key.toLowerCase())) e.preventDefault();
       };
     }
+
+    // --- 滚动加载优化 ---
+    let scrollTimeout;
+    window.addEventListener('scroll', () => {
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        // 如果接近底部，且没有停止，尝试加载更多
+        if (!state.isStopped && (window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
+          startLoading();
+        }
+      }, 200);
+    });
   </script>
 </body>
 </html>
